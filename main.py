@@ -39,6 +39,10 @@ def parse_recently_played(item: dict) -> dict:
         "played_at": item["played_at"]
     }
 
+def parse_listening_history(row) -> dict:
+    return dict(row)
+
+#------- MCP TOOLS --------
 @mcp.tool()
 def get_top_artists(limit: int = 10):
     """

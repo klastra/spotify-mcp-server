@@ -1,6 +1,6 @@
 import sqlite3
 
-from main import parse_listening_history
+from parsers import parse_listening_history
 
 def get_connection():
     conn = sqlite3.connect("spotify.db")
@@ -19,6 +19,8 @@ def initialize_database():
             artist_id TEXT,
             artist_name TEXT,
             played_at TEXT
+                 
+            UNIQUE (track_id, played_at)
         );
     """)
 
@@ -57,13 +59,15 @@ def insert_listening_history(track):
     conn.commit()
     conn.close()
 
-def query_from_listening_history() -> list[tuple[str, str]]:
+def query_listening_history(limit: int) -> list[dict]:
     conn = get_connection()
 
     cursor = conn.execute(
         """
         SELECT * FROM ListeningHistory
-        """
+        LIMIT ?
+        """,
+        (limit, )
     )
 
     rows = cursor.fetchall()
@@ -71,3 +75,23 @@ def query_from_listening_history() -> list[tuple[str, str]]:
     conn.close()
 
     return [parse_listening_history(row) for row in rows]
+
+
+def listening_event_exists(track_id, played_at) -> bool:
+    conn = get_connection()
+
+    cursor = conn.execute(  
+        """
+        SELECT 1 FROM ListeningHistory
+        WHERE track_id = ?
+        AND played_at = ?
+        LIMIT 1 
+        """,
+        (track_id, played_at)
+    )
+
+    track_exists = cursor.fetchone() is not None
+
+    conn.close()
+
+    return track_exists

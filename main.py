@@ -2,7 +2,10 @@ import spotipy
 import os
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
-from spotipy.oauth2 import SpotifyOAuth 
+from spotipy.oauth2 import SpotifyOAuth
+
+from database_helper import insert_listening_history, listening_event_exists, query_listening_history
+from parsers import parse_artist, parse_recently_played 
 
 load_dotenv()
 
@@ -21,30 +24,9 @@ def get_spotify_client():
         )
     )
 
-def parse_artist(artist: dict) -> dict:
-    return {
-        "id": artist["id"],
-        "name": artist["name"]
-    }
-
-def parse_recently_played(item: dict) -> dict:
-    track = item["track"]
-
-    return {
-        "track_id": track["id"],
-        "track_name": track["name"],
-        "album_name": track["album"]["name"],
-        "artist_id": track["artists"][0]["id"],
-        "artist_name": track["artists"][0]["name"],
-        "played_at": item["played_at"]
-    }
-
-def parse_listening_history(row) -> dict:
-    return dict(row)
-
 #------- MCP TOOLS --------
 @mcp.tool()
-def get_top_artists(limit: int = 10):
+def fetch_top_artists_from_spotify(limit: int = 10):
     """
     Gets top artists on Spotify.
     Allows Claude to answer "Who are my top 10 artists?"
@@ -57,7 +39,7 @@ def get_top_artists(limit: int = 10):
     return artists_parsed
 
 @mcp.tool()
-def get_recently_played(limit: int = 10):
+def fetch_recently_played_from_spotify(limit: int = 10):
     """
     Gets recently played songs on Spotify.
     Allows Claude to answer "What songs have I listened to recently?"
@@ -69,6 +51,32 @@ def get_recently_played(limit: int = 10):
 
     return songs_parsed
 
+@mcp.tool()
+def sync_recently_played():
+    """
+    Syncs recently played songs into the database.
+    Checks if song being inserted already exists in the database before inserting.
+    Returns the count of new listening events.
+    """
+    recent_tracks = fetch_recently_played_from_spotify()
+    new_listens = 0
+
+    for track in recent_tracks:
+        if not listening_event_exists(track['track_id'], track['played_at']):
+            insert_listening_history(track)
+            new_listens += 1
+    return {
+        "status":"success",
+        "message": f"Inserted {new_listens} new listening event(s)!"
+    }
+
+@mcp.tool()
+def get_listening_history(limit: int = 50):
+    """
+    Gets listening history from the local database.
+    This is used for analyzing listening patterns.
+    """
+    return query_listening_history(limit)
 
 if __name__ == "__main__":
     mcp.run()

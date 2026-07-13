@@ -18,3 +18,10 @@ def parse_recently_played(item: dict) -> dict:
 
 def parse_listening_history(row) -> dict:
     return dict(row)
+
+
+def parse_artist_play_count(row):
+    return {
+        "artist_name": row["artist_name"],
+        "play_count": row["play_count"]
+    }

@@ -1,6 +1,6 @@
 import sqlite3
 
-from parsers import parse_listening_history
+from parsers import parse_artist_play_count, parse_listening_history
 
 def get_connection():
     conn = sqlite3.connect("spotify.db")
@@ -75,6 +75,29 @@ def query_listening_history(limit: int) -> list[dict]:
     conn.close()
 
     return [parse_listening_history(row) for row in rows]
+
+
+def query_most_listened_artists(limit: int):
+    conn = get_connection()
+
+    cursor = conn.execute(
+        """
+        SELECT
+            artist_name,
+            COUNT(*) AS play_count
+        FROM ListeningHistory
+        GROUP BY artist_name
+        ORDER BY play_count DESC
+        LIMIT ?;
+        """,
+        (limit,)
+    )
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [parse_artist_play_count(row) for row in rows]
 
 
 def listening_event_exists(track_id, played_at) -> bool:

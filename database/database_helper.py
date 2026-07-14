@@ -1,34 +1,27 @@
-import sqlite3
-
-from parsers import parse_artist_play_count, parse_listening_history
+import pyodbc
+from parsers.parsers import parse_artist_play_count, parse_listening_history, rows_to_dicts
+from config import (
+    SQL_SERVER_DRIVER,
+    SQL_SERVER_HOST,
+    SQL_SERVER_PORT,
+    SQL_SERVER_DATABASE,
+    SQL_SERVER_USERNAME,
+    SQL_SERVER_PASSWORD
+)
 
 def get_connection():
-    conn = sqlite3.connect("spotify.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    connection_string = (
+        f"DRIVER={{{SQL_SERVER_DRIVER}}};"
+        f"SERVER={SQL_SERVER_HOST},{SQL_SERVER_PORT};"
+        f"DATABASE={SQL_SERVER_DATABASE};"
+        f"UID={SQL_SERVER_USERNAME};"
+        f"PWD={SQL_SERVER_PASSWORD};"
+        "TrustServerCertificate=yes;"
+    )
 
-def initialize_database():
-    conn = get_connection()
+    return pyodbc.connect(connection_string)
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS ListeningHistory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            track_id TEXT,
-            track_name TEXT,
-            album_name TEXT,
-            artist_id TEXT,
-            artist_name TEXT,
-            played_at TEXT
-                 
-            UNIQUE (track_id, played_at)
-        );
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-def insert_listening_history(track):
+def insert_listening_history(track: dict) -> None:
     conn = get_connection()
 
     conn.execute(
@@ -64,36 +57,38 @@ def query_listening_history(limit: int) -> list[dict]:
 
     cursor = conn.execute(
         """
-        SELECT * FROM ListeningHistory
-        LIMIT ?
+        SELECT TOP (?)
+            *
+        FROM ListeningHistory;
         """,
-        (limit, )
+        (limit,)
     )
 
     rows = cursor.fetchall()
+    rows = rows_to_dicts(cursor, rows)
 
     conn.close()
 
     return [parse_listening_history(row) for row in rows]
 
 
-def query_most_listened_artists(limit: int):
+def query_most_listened_artists(limit: int) -> list[dict]:
     conn = get_connection()
 
     cursor = conn.execute(
-        """
-        SELECT
-            artist_name,
-            COUNT(*) AS play_count
-        FROM ListeningHistory
-        GROUP BY artist_name
-        ORDER BY play_count DESC
-        LIMIT ?;
-        """,
-        (limit,)
+    """
+    SELECT TOP (?)
+        artist_name,
+        COUNT(*) AS play_count
+    FROM ListeningHistory
+    GROUP BY artist_name
+    ORDER BY play_count DESC;
+    """,
+    (limit,)
     )
 
     rows = cursor.fetchall()
+    rows = rows_to_dicts(cursor, rows)
 
     conn.close()
 
@@ -105,10 +100,9 @@ def listening_event_exists(track_id, played_at) -> bool:
 
     cursor = conn.execute(  
         """
-        SELECT 1 FROM ListeningHistory
+        SELECT TOP 1 1 FROM ListeningHistory
         WHERE track_id = ?
         AND played_at = ?
-        LIMIT 1 
         """,
         (track_id, played_at)
     )

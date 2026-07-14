@@ -1,3 +1,11 @@
+def rows_to_dicts(cursor, rows) -> list[dict]:
+    columns = [column[0] for column in cursor.description]
+
+    return [
+        dict(zip(columns, row))
+        for row in rows
+    ]
+
 def parse_artist(artist: dict) -> dict:
     return {
         "id": artist["id"],
@@ -20,7 +28,7 @@ def parse_listening_history(row) -> dict:
     return dict(row)
 
 
-def parse_artist_play_count(row):
+def parse_artist_play_count(row) -> dict:
     return {
         "artist_name": row["artist_name"],
         "play_count": row["play_count"]

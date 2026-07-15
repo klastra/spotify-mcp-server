@@ -30,5 +30,6 @@ def sync_recently_played() -> dict:
             new_listens += 1
     return {
         "status":"success",
+        "inserted": new_listens,
         "message": f"Inserted {new_listens} new listening event(s)!"
     }

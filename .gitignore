@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.pyc*
 
 # Cache files
 .cache/
@@ -13,6 +14,10 @@ build/
 .venv/
 venv/
 env/
+
+# .env files, except for .env.example
+.env*
+!.env.example
 
 # Environment variables/secrets
 .env

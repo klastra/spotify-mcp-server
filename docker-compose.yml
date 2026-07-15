@@ -3,12 +3,25 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: spotify-sqlserver
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "SpotifyAppPassword!"
+      - ENV_FILE=.env.docker
+    env_file:
+      - .env.docker
     ports:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spotify-sync-scheduler
+    command: uv run python -u -m jobs.scheduler
+    env_file:
+      - .env.docker
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
 
 volumes:
   sqlserver-data:

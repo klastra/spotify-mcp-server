@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+env_file = os.getenv("ENV_FILE", ".env.local")
+load_dotenv(env_file)
 
 SPOTIPY_CLIENT_ID=os.getenv("SPOTIPY_CLIENT_ID")
 SPOTIPY_CLIENT_SECRET=os.getenv("SPOTIPY_CLIENT_SECRET")

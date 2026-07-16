@@ -45,7 +45,7 @@ def insert_listening_history(track: dict) -> None:
             track["album_name"],
             track["artist_id"],
             track["artist_name"],
-            track["played_at"]
+            track["played_at"].isoformat()
         )
     )
 
@@ -95,6 +95,30 @@ def query_most_listened_artists(limit: int) -> list[dict]:
     return [parse_artist_play_count(row) for row in rows]
 
 
+def query_listening_summary() -> dict:
+    conn = get_connection()
+
+    cursor = conn.execute(
+        """
+        SELECT
+            COUNT(track_id) AS total_plays,
+            COUNT(DISTINCT artist_id) AS unique_artists,
+            COUNT(DISTINCT track_id) AS unique_tracks
+        FROM ListeningHistory;
+        """
+    )
+
+    row = cursor.fetchone()
+
+    conn.close()
+
+    return {
+        "total_plays": row.total_plays,
+        "unique_artists": row.unique_artists,
+        "unique_tracks": row.unique_tracks
+    }
+
+# Duplicate detection
 def listening_event_exists(track_id, played_at) -> bool:
     conn = get_connection()
 

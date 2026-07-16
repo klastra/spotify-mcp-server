@@ -45,7 +45,7 @@ def insert_listening_history(track: dict) -> None:
             track["album_name"],
             track["artist_id"],
             track["artist_name"],
-            track["played_at"].isoformat()
+            track["played_at"]
         )
     )
 

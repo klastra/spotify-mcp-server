@@ -1,15 +1,21 @@
 # Spotify MCP Server
 
-An AI-powered Spotify analytics server built using the Model Context Protocol (MCP). This project allows Claude Desktop to securely interact with Spotify listening history, synchronize data into SQL Server, and answer questions using custom MCP tools.
+An AI-powered Spotify analytics server built with the Model Context Protocol (MCP).
+
+This project allows Claude Desktop to interact with personal Spotify listening data through custom MCP tools. 
+
+It automatically synchronizes listening history into SQL Server, enables querying and analysis of listening patterns, and provides natural language insights through Claude.
 
 ## Features
 
-- Fetch top Spotify artists
-- Retrieve recently played songs
-- Synchronize listening history into SQL Server
-- Analyze listening history using SQL queries
-- Ask Claude questions about your listening habits
-- Fully Dockerized deployment
+- Fetch Spotify top artists
+- Retrieve recently played tracks
+- Automatically synchronize listening history into SQL Server
+- Prevent duplicate listening events
+- Query listening history through MCP tools
+- Analyze listening patterns using SQL queries
+- Ask Claude natural language questions about listening habits
+- Fully containerized with Docker
 
 ---
 
@@ -45,7 +51,17 @@ An AI-powered Spotify analytics server built using the Model Context Protocol (M
               ListeningHistory Table
 ```
 
+### Data Flow
+
+1. Claude sends a request through MCP.
+2. The Spotify MCP Server executes the requested tool.
+3. Spotify data is retrieved or queried from SQL Server.
+4. Results are returned to Claude for analysis.
+
+A background scheduler periodically synchronizes recently played tracks from Spotify into the database.
+
 ---
+
 
 ## MCP Tools
 
@@ -91,7 +107,7 @@ ListeningHistory
 | album_name | NVARCHAR |
 | artist_id | NVARCHAR |
 | artist_name | NVARCHAR |
-| played_at | DATETIME2 |
+| played_at | DATETIMEOFFSET |
 
 Unique Constraint
 
@@ -100,6 +116,38 @@ Unique Constraint
 ```
 
 Prevents duplicate listening events.
+
+---
+
+## Background Scheduler
+
+The project includes a long-running worker that periodically synchronizes Spotify listening history.
+
+Example workflow:
+```
+                    Scheduler
+                        |
+                        ▼
+              sync_recently_played()
+                        |
+                        ▼
+                    Spotify API
+                        |
+                        ▼
+                    SQL Server
+```
+The scheduler runs as a Docker service and automatically restarts if stopped.
+
+## Running Locally
+
+Build and start services: `docker compose up --build`
+
+### Services
+
+spotify-sync-scheduler
+spotify-sqlserver
+
+The MCP server can then be connected to Claude Desktop through the MCP configuration.
 
 ---
 
